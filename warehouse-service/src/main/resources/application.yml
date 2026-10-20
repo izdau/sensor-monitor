@@ -1,7 +1,12 @@
 spring:
   application.name: warehouse-service
-  # keep the JVM alive until UDP listeners and Kafka threads are stopped on shutdown
-  main.keep-alive: true
-  lifecycle.timeout-per-shutdown-phase: 20s
+  main.keep-alive: true # keep the JVM alive until UDP listeners and Kafka threads are stopped on shutdown
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+conf:
+  warehouse-id: warehouse-1
+  temperature-port: 3344
+  humidity-port: 3355
+  kafka.topic: sensor-measurements
+

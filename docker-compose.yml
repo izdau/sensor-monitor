@@ -1,0 +1,16 @@
+# Local only: one Kafka broker with the image defaults. Production runs 3+ brokers (see README).
+services:
+  kafka:
+    image: apache/kafka:4.2.2
+    ports:
+      - "9092:9092"
+      - "8080:8080" # Kafka UI, see below
+
+  kafka-ui:
+    image: kafbat/kafka-ui:v1.5.0
+    network_mode: service:kafka # shares the network of kafka, so the broker's address localhost:9092 works for the UI too
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: localhost:9092
+    depends_on:
+      - kafka

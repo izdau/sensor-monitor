@@ -3,11 +3,9 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.7' apply false
 }
 
-// build settings shared by both services
+// build settings shared by all modules
 subprojects {
     apply plugin: 'java'
-    apply plugin: 'org.springframework.boot'
-    apply plugin: 'io.spring.dependency-management'
 
     group = 'sensormonitor'
     version = '0.x'
@@ -21,6 +19,12 @@ subprojects {
     repositories {
         mavenCentral()
     }
+}
+
+// the two services; 'common' is a plain library
+configure(subprojects.findAll { it.name != 'common' }) {
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
 
     tasks.withType(JavaCompile).configureEach {
         // silences Lombok's sun.misc.Unsafe warning on JDK 24+ (compiler JVM only)
@@ -33,10 +37,13 @@ subprojects {
     }
 
     dependencies {
+        implementation project(':common')
+
         // reactive (Reactor Netty serves the UDP sockets)
         implementation 'io.projectreactor.netty:reactor-netty-core'
         implementation 'org.springframework.boot:spring-boot-starter-validation'
         implementation 'org.springframework.boot:spring-boot-starter-kafka'
+        implementation 'org.springframework.boot:spring-boot-starter-jackson' // JSON of the Kafka messages
 
         // lombok
         compileOnly 'org.projectlombok:lombok'
