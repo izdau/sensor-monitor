@@ -86,3 +86,15 @@ The (JSON) contract between **warehouse-service** and **central-service**, the m
 5. Stop Kafka and Kafka UI: `docker compose down`
 
 Sensor data in any other format, e.g. `sensor_id=t1;value=30`, is discarded with a warning message in **warehouse-service** application log.
+
+## Test central-service (alarms) locally
+
+1. Start Kafka (`docker compose up -d`), then run `WarehouseServiceApplication` and `CentralServiceApplication` (in IntelliJ).
+2. Send sensor data that exceeds threshold, e.g. `echo "sensor_id=t1; value=35.1" | nc -u -w1 localhost 3344` or `echo "sensor_id=t1; value=35.1" > /dev/udp/localhost/3344`, if `nc` is not installed 
+3. **central-service** log shows a line for every value above the threshold (temperature > 35, humidity > 50, see `application.yml`):
+   ```text
+   WARN ... AlarmService : ALARM TEMPERATURE: warehouse=warehouse-1; sensor=t1; value=35.1; threshold=35.0; eventId=...; receivedAt=...
+   WARN ... AlarmService : ALARM HUMIDITY   : warehouse=warehouse-1; sensor=h1; value=50.1; threshold=50.0; eventId=...; receivedAt=...
+   ```
+   The alarm lines are in red (`spring.output.ansi.enabled` in `application.yml`).
+   Measurements sent when **central-service** is down are alarmed when it starts up again.

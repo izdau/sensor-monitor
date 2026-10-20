@@ -2,6 +2,14 @@ spring:
   application.name: central-service
   main.keep-alive: true # keep the JVM alive until Kafka consumers are stopped on shutdown
   lifecycle.timeout-per-shutdown-phase: 20s
+  output.ansi.enabled: always # colored ALARM lines (Windows consoles are not detected automatically)
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: central-service
+      auto-offset-reset: earliest # a new consumer group also reads the measurements sent before it started
 
+conf:
+  kafka.topic: sensor-measurements
+  threshold.temperature: 35
+  threshold.humidity: 50
