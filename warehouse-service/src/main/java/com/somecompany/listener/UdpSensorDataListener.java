@@ -20,12 +20,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UdpSensorDataListener implements SmartLifecycle {
 
-    @Value("${conf.temperature-port}")
+    @Value("${conf.sensor.temperature-port}")
     private int temperaturePort;
-    @Value("${conf.humidity-port}")
+    @Value("${conf.sensor.humidity-port}")
     private int humidityPort;
 
-    private final SensorMeasurementService measurementService;
+    private final SensorMeasurementService sensorMeasurementService;
     private final List<Connection> servers = new ArrayList<>();
 
     @Override
@@ -38,7 +38,7 @@ public class UdpSensorDataListener implements SmartLifecycle {
         servers.add(
                 UdpServer.create()
                 .bindAddress(() -> new InetSocketAddress(port)) // all interfaces, IPv4 and IPv6 (the default is localhost only)
-                .handle((in, out) -> measurementService.process(type, in.receive().asString()))
+                .handle((in, out) -> sensorMeasurementService.process(type, in.receive().asString()))
                 .bindNow());
         log.info("listening for {} sensor on UDP port {}", type, port);
     }

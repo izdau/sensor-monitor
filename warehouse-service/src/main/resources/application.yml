@@ -6,7 +6,7 @@ spring:
 
 conf:
   warehouse-id: warehouse-1
-  temperature-port: 3344
-  humidity-port: 3355
+  sensor.temperature-port: 3344
+  sensor.humidity-port: 3355
   kafka.topic: sensor-measurements
 
