@@ -2,11 +2,11 @@
 
 A small event-driven system that watches the temperature and humidity sensors of one or more warehouses.
 
-- **warehouse-service** receives sensor measurements over UDP and publishes them to Kafka.
+- **warehouse-service** receives sensor measurements over UDP, validates them and publishes them to Kafka.
 - **central-service** consumes the measurements from Kafka and raises alarms in its log
   when a configured threshold is exceeded.
 
-Java 25, Spring Boot, reactive with Reactor (Flux/Mono) on Reactor Netty, Gradle, Apache Kafka.
+Java 25, Spring Boot, reactive with Flux/Mono on Reactor Netty, Gradle, Apache Kafka.
 
 ## Compile and test
 
@@ -42,16 +42,17 @@ Java 25, Spring Boot, reactive with Reactor (Flux/Mono) on Reactor Netty, Gradle
                   ALARM in the log
 ```
 
-Kafka will sit between the **warehouse-service** and **central-service**. This will help to handle the spikes 
-and keep the readings if either of the service gets down or restarts.
+Kafka will sit between the **warehouse-service** and **central-service**. This will help to keep the sensor readings if 
+either of the services goes down or restarts as well as handle sudden spikes.
 
 In production: 3 Kafka brokers (replication factor 3, `min.insync.replicas=2`, `acks=all`). Every
-event is on at least 2 brokers and 1 broker can fail. 5 brokers (factor 5, min in-sync 3) survive 2.
+event is on at least 2 brokers, therefore system survives 1 broker fail. For 5 brokers (factor 5, min in-sync 3) system will survive 2 broker failures.
 Locally one broker is enough.
 
 ## Message contract
 
-The (JSON) contract between **warehouse-service** and **central-service**, the message that will be sent to Kafka topic `sensor-measurements` with the key `warehouseId:sensorId`:
+The (JSON) contract between **warehouse-service** and **central-service**, the message that will be sent to Kafka topic 
+`sensor-measurements` with the key `warehouseId:sensorId`:
 
 ```json
 {
@@ -64,7 +65,7 @@ The (JSON) contract between **warehouse-service** and **central-service**, the m
 }
 ```
 
-`sensorType` is set by the UDP port (3344 or 3355), `receivedAt` by **warehouse-service** on arrival.
+`sensorType` is set by the UDP port (3344 or 3355), `receivedAt` is set by **warehouse-service** on sensor data arrival.
 
 ## Test warehouse-service locally
 
@@ -76,7 +77,7 @@ The (JSON) contract between **warehouse-service** and **central-service**, the m
    echo "sensor_id=t1; value=30" | nc -u -w1 localhost 3344
    echo "sensor_id=h1; value=40" | nc -u -w1 localhost 3355
    ```
-   Git Bash on Windows has no `nc`, but bash can send UDP by itself:
+   If `nc` is not installed and not available in Git Bash:
    ```bash
    echo "sensor_id=t1; value=30" > /dev/udp/localhost/3344
    echo "sensor_id=h1; value=40" > /dev/udp/localhost/3355
@@ -84,4 +85,4 @@ The (JSON) contract between **warehouse-service** and **central-service**, the m
 4. See the JSON messages in Kafka UI at http://localhost:8080 : **Topics** -> `sensor-measurements` -> **Messages**.
 5. Stop Kafka and Kafka UI: `docker compose down`
 
-Sensor data in any other format, e.g. `sensor_id=t1;value=30`, is dropped with a warning in the application log.
+Sensor data in any other format, e.g. `sensor_id=t1;value=30`, is discarded with a warning message in **warehouse-service** application log.
