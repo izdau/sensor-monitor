@@ -1,0 +1,73 @@
+plugins {
+    id 'org.springframework.boot' version '4.1.1' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+}
+
+// build settings shared by both services
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    group = 'sensormonitor'
+    version = '0.x'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    }
+
+    repositories {
+        mavenCentral()
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        // silences Lombok's sun.misc.Unsafe warning on JDK 24+ (compiler JVM only)
+        options.fork = true
+        options.forkOptions.jvmArgs = ['--sun-misc-unsafe-memory-access=allow']
+    }
+
+    configurations {
+        mockitoAgent
+    }
+
+    dependencies {
+        // reactive (Reactor Netty serves the UDP sockets)
+        implementation 'io.projectreactor.netty:reactor-netty-core'
+        implementation 'org.springframework.boot:spring-boot-starter-validation'
+        implementation 'org.springframework.boot:spring-boot-starter-kafka'
+
+        // lombok
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+        annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.springframework.boot:spring-boot-starter-kafka-test'
+        testImplementation 'io.projectreactor:reactor-test' // StepVerifier, TestPublisher
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+        mockitoAgent('org.mockito:mockito-core') { transitive = false }
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+
+        // Mockito as startup agent: no dynamic-agent warning on JDK 21+ (-Xshare:off mutes the CDS notice it causes)
+        def mockitoAgentFiles = configurations.mockitoAgent
+        jvmArgumentProviders.add({ ["-javaagent:${mockitoAgentFiles.asPath}".toString()] } as CommandLineArgumentProvider)
+        jvmArgs '-Xshare:off'
+
+        testLogging {
+            events = ['failed']
+            exceptionFormat = 'full'
+        }
+    }
+
+    tasks.named('jar') { enabled = false } // only the executable boot jar is built
+
+    tasks.named('bootJar') {
+        archiveFileName = "${project.name}.jar"
+    }
+}

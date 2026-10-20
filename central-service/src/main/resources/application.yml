@@ -1,0 +1,7 @@
+spring:
+  application.name: central-service
+  # keep the JVM alive until Kafka consumers are stopped on shutdown
+  main.keep-alive: true
+  lifecycle.timeout-per-shutdown-phase: 20s
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
