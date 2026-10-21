@@ -1,7 +1,7 @@
 package com.somecompany.listener;
 
 import com.somecompany.enums.SensorType;
-import com.somecompany.repository.SensorMeasurementRepository;
+import com.somecompany.producer.SensorMeasurementProducer;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -24,21 +24,21 @@ import static org.mockito.Mockito.when;
 class UdpSensorDataListenerTests {
 
     @MockitoBean
-    private SensorMeasurementRepository repository;
+    private SensorMeasurementProducer sensorMeasurementProducer;
 
     @Test
     void validSensorDataShouldBeSavedAndInvalidSensorDataShouldBeDiscarded() throws IOException {
-        when(repository.save(any())).thenReturn(Mono.empty());
+        when(sensorMeasurementProducer.send(any())).thenReturn(Mono.empty());
 
         send(33344, "garbage"); // dropped, and handled before the next data of the same port
         send(33344, "sensor_id=t1; value=36.5\n");
         send(33355, "sensor_id=h1; value=40");
 
-        verify(repository, timeout(3000)).save(argThat(event ->
+        verify(sensorMeasurementProducer, timeout(3000)).send(argThat(event ->
                 event.sensorType() == SensorType.TEMPERATURE && event.sensorId().equals("t1") && event.value() == 36.5));
-        verify(repository, timeout(3000)).save(argThat(event ->
+        verify(sensorMeasurementProducer, timeout(3000)).send(argThat(event ->
                 event.sensorType() == SensorType.HUMIDITY && event.sensorId().equals("h1") && event.value() == 40));
-        verify(repository, times(2)).save(any());
+        verify(sensorMeasurementProducer, times(2)).send(any());
     }
 
     private static void send(int port, String sensorData) throws IOException {

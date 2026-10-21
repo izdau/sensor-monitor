@@ -1,4 +1,4 @@
-package com.somecompany.repository;
+package com.somecompany.producer;
 
 import com.somecompany.dto.SensorMeasurementEvent;
 import com.somecompany.enums.SensorType;
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class SensorMeasurementRepositoryTests {
+class SensorMeasurementProducerTests {
 
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
     private final SensorMeasurementEvent event = new SensorMeasurementEvent(
@@ -37,19 +37,19 @@ class SensorMeasurementRepositoryTests {
 
     @Mock
     private KafkaTemplate<String, String> kafkaTemplate;
-    private SensorMeasurementRepository repository;
+    private SensorMeasurementProducer sensorMeasurementProducer;
 
     @BeforeEach
     void setUp() {
-        repository = new SensorMeasurementRepository(kafkaTemplate, jsonMapper);
-        ReflectionTestUtils.setField(repository, "topic", "sensor-measurements");
+        sensorMeasurementProducer = new SensorMeasurementProducer(kafkaTemplate, jsonMapper);
+        ReflectionTestUtils.setField(sensorMeasurementProducer, "topic", "sensor-measurements");
     }
 
     @Test
     void saveShouldSendEventToKafkaWithSpecifiedKeyFormat() {
         when(kafkaTemplate.send(anyString(), anyString(), anyString())).thenReturn(CompletableFuture.completedFuture(null));
 
-        StepVerifier.create(repository.save(event)).verifyComplete();
+        StepVerifier.create(sensorMeasurementProducer.send(event)).verifyComplete();
 
         ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
         verify(kafkaTemplate).send(eq("sensor-measurements"), eq("warehouse-1:t1"), json.capture());
@@ -70,6 +70,6 @@ class SensorMeasurementRepositoryTests {
         when(kafkaTemplate.send(anyString(), anyString(), anyString()))
                 .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("kafka is down")));
 
-        StepVerifier.create(repository.save(event)).expectError(IllegalStateException.class).verify();
+        StepVerifier.create(sensorMeasurementProducer.send(event)).expectError(IllegalStateException.class).verify();
     }
 }

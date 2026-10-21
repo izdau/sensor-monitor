@@ -2,7 +2,7 @@ package com.somecompany.service;
 
 import com.somecompany.dto.SensorMeasurementEvent;
 import com.somecompany.enums.SensorType;
-import com.somecompany.repository.SensorMeasurementRepository;
+import com.somecompany.producer.SensorMeasurementProducer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,24 +28,24 @@ import static org.mockito.Mockito.when;
 class SensorMeasurementServiceTests {
 
     @Mock
-    private SensorMeasurementRepository repository;
+    private SensorMeasurementProducer sensorMeasurementProducer;
     @InjectMocks
-    private SensorMeasurementService service;
+    private SensorMeasurementService sensorMeasurementService;
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(service, "warehouseId", "warehouse-1");
+        ReflectionTestUtils.setField(sensorMeasurementService, "warehouseId", "warehouse-1");
     }
 
     @Test
     void validSensorDataShouldBeSavedAsAnEvent() {
-        when(repository.save(any())).thenReturn(Mono.empty());
+        when(sensorMeasurementProducer.send(any())).thenReturn(Mono.empty());
 
-        StepVerifier.create(service.process(SensorType.TEMPERATURE, Flux.just("sensor_id=t1; value=36.5")))
+        StepVerifier.create(sensorMeasurementService.process(SensorType.TEMPERATURE, Flux.just("sensor_id=t1; value=36.5")))
                 .verifyComplete();
 
         ArgumentCaptor<SensorMeasurementEvent> saved = ArgumentCaptor.forClass(SensorMeasurementEvent.class);
-        verify(repository).save(saved.capture());
+        verify(sensorMeasurementProducer).send(saved.capture());
         assertThat(saved.getValue())
                 .usingRecursiveComparison().ignoringFields("eventId", "receivedAt")
                 .isEqualTo(new SensorMeasurementEvent(null, "warehouse-1", "t1", SensorType.TEMPERATURE, 36.5, null));
@@ -56,39 +56,39 @@ class SensorMeasurementServiceTests {
     @ParameterizedTest
     @ValueSource(strings = {"sensor_id=t1; value=30", "sensor_id=t1; value=-4.5", "sensor_id=t1; value=30\n", "sensor_id=h1; value=50\r\n"})
     void validSensorDataFormatsShouldBeSaved(String sensorData) {
-        when(repository.save(any())).thenReturn(Mono.empty());
+        when(sensorMeasurementProducer.send(any())).thenReturn(Mono.empty());
 
-        StepVerifier.create(service.process(SensorType.TEMPERATURE, Flux.just(sensorData))).verifyComplete();
+        StepVerifier.create(sensorMeasurementService.process(SensorType.TEMPERATURE, Flux.just(sensorData))).verifyComplete();
 
-        verify(repository).save(any());
+        verify(sensorMeasurementProducer).send(any());
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"garbage", "", "sensor_id=t1;value=30", "sensor_id=t1;  value=30", " sensor_id=t1; value=30",
             "sensor_id=h1; value=30 ", "sensor_id=; value=30", "sensor_id=h1; value=abc", "SENSOR_ID=t1; VALUE=30"})
     void invalidSensorDataFormatsShouldBeDiscarded(String sensorData) {
-        StepVerifier.create(service.process(SensorType.TEMPERATURE, Flux.just(sensorData))).verifyComplete();
+        StepVerifier.create(sensorMeasurementService.process(SensorType.TEMPERATURE, Flux.just(sensorData))).verifyComplete();
 
-        verifyNoInteractions(repository);
+        verifyNoInteractions(sensorMeasurementProducer);
     }
 
     @Test
     void invalidSensorDataFormatsShouldNotStopTheStream() {
-        when(repository.save(any())).thenReturn(Mono.empty());
+        when(sensorMeasurementProducer.send(any())).thenReturn(Mono.empty());
 
-        StepVerifier.create(service.process(SensorType.TEMPERATURE, Flux.just("garbage", "sensor_id=t1; value=30")))
+        StepVerifier.create(sensorMeasurementService.process(SensorType.TEMPERATURE, Flux.just("garbage", "sensor_id=t1; value=30")))
                 .verifyComplete();
 
-        verify(repository).save(any());
+        verify(sensorMeasurementProducer).send(any());
     }
 
     @Test
     void failedSavesShouldNotStopTheStream() {
-        when(repository.save(any())).thenReturn(Mono.error(new IllegalStateException("kafka is down"))).thenReturn(Mono.empty());
+        when(sensorMeasurementProducer.send(any())).thenReturn(Mono.error(new IllegalStateException("kafka is down"))).thenReturn(Mono.empty());
 
-        StepVerifier.create(service.process(SensorType.TEMPERATURE, Flux.just("sensor_id=t1; value=30", "sensor_id=t2; value=31")))
+        StepVerifier.create(sensorMeasurementService.process(SensorType.TEMPERATURE, Flux.just("sensor_id=t1; value=30", "sensor_id=t2; value=31")))
                 .verifyComplete();
 
-        verify(repository, times(2)).save(any());
+        verify(sensorMeasurementProducer, times(2)).send(any());
     }
 }

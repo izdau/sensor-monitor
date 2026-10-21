@@ -2,7 +2,7 @@ package com.somecompany.service;
 
 import com.somecompany.dto.SensorMeasurementEvent;
 import com.somecompany.enums.SensorType;
-import com.somecompany.repository.SensorMeasurementRepository;
+import com.somecompany.producer.SensorMeasurementProducer;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ public class SensorMeasurementService {
     // sensor_id=t1; value=30 (netcat adds a line break at the end)
     private static final Pattern SENSOR_DATA_REGEX_PATTERN = Pattern.compile("sensor_id=([\\w.-]{1,64}); value=(-?\\d+(?:\\.\\d+)?)\\R?");
 
-    private final SensorMeasurementRepository sensorMeasurementRepository; // store sensor data (sensor measurement) by sending it to Kafka
+    private final SensorMeasurementProducer sensorMeasurementProducer; // store sensor data (sensor measurement) by sending it to Kafka
 
     @Value("${conf.warehouse-id}")
     private String warehouseId;
@@ -33,7 +33,7 @@ public class SensorMeasurementService {
     public Mono<Void> process(SensorType type, Flux<String> sensorData) {
         return sensorData
                 .flatMap(data -> Mono.fromCallable(() -> toEvent(type, data))
-                        .flatMap(sensorMeasurementRepository::save)
+                        .flatMap(sensorMeasurementProducer::send)
                         .onErrorResume(e -> {
                             log.warn("dropped {} sensor data: {}", type, e.getMessage());
                             return Mono.empty();
