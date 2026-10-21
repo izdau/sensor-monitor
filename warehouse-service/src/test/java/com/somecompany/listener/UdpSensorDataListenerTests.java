@@ -27,7 +27,7 @@ class UdpSensorDataListenerTests {
     private SensorMeasurementProducer sensorMeasurementProducer;
 
     @Test
-    void validSensorDataShouldBeSavedAndInvalidSensorDataShouldBeDiscarded() throws IOException {
+    void validSensorDataShouldBeSentAndInvalidSensorDataShouldBeDiscarded() throws IOException {
         when(sensorMeasurementProducer.send(any())).thenReturn(Mono.empty());
 
         send(33344, "garbage"); // dropped, and handled before the next data of the same port

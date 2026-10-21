@@ -53,7 +53,7 @@ class SensorAlarmServiceTests {
     }
 
     @Test
-    void temperatureAlarmShouldBeAOneLineWithAllDetails(CapturedOutput output) {
+    void temperatureAlarmShouldBeOneLineWithAllDetails(CapturedOutput output) {
         sensorAlarmService.check(event(SensorType.TEMPERATURE, 35.1));
 
         assertThat(output)
@@ -62,7 +62,7 @@ class SensorAlarmServiceTests {
     }
 
     @Test
-    void humidityAlarmShouldBeAOneLineWithAllDetails(CapturedOutput output) {
+    void humidityAlarmShouldBeOneLineWithAllDetails(CapturedOutput output) {
         sensorAlarmService.check(event(SensorType.HUMIDITY, 50.1));
 
         assertThat(output)

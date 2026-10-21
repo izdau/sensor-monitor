@@ -46,7 +46,7 @@ class SensorMeasurementProducerTests {
     }
 
     @Test
-    void saveShouldSendEventToKafkaWithSpecifiedKeyFormat() {
+    void eventShouldBeSentToKafkaWithSpecifiedKeyFormat() {
         when(kafkaTemplate.send(anyString(), anyString(), anyString())).thenReturn(CompletableFuture.completedFuture(null));
 
         StepVerifier.create(sensorMeasurementProducer.send(event)).verifyComplete();
@@ -66,7 +66,7 @@ class SensorMeasurementProducerTests {
     }
 
     @Test
-    void saveShouldFailWhenKafkaIsDown() {
+    void sendShouldFailWhenKafkaIsDown() {
         when(kafkaTemplate.send(anyString(), anyString(), anyString()))
                 .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("kafka is down")));
 

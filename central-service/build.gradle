@@ -1,1 +1,5 @@
 description = 'Consumes sensor measurements from Kafka and raises alarms when thresholds are exceeded'
+
+dependencies {
+    implementation 'io.projectreactor:reactor-core' // the Kafka listener returns a Mono
+}

@@ -38,24 +38,25 @@ class SensorMeasurementServiceTests {
     }
 
     @Test
-    void validSensorDataShouldBeSavedAsAnEvent() {
+    void validSensorDataShouldBeSentAsAnEvent() {
         when(sensorMeasurementProducer.send(any())).thenReturn(Mono.empty());
 
         StepVerifier.create(sensorMeasurementService.process(SensorType.TEMPERATURE, Flux.just("sensor_id=t1; value=36.5")))
                 .verifyComplete();
 
-        ArgumentCaptor<SensorMeasurementEvent> saved = ArgumentCaptor.forClass(SensorMeasurementEvent.class);
-        verify(sensorMeasurementProducer).send(saved.capture());
-        assertThat(saved.getValue())
+        ArgumentCaptor<SensorMeasurementEvent> sent = ArgumentCaptor.forClass(SensorMeasurementEvent.class);
+        verify(sensorMeasurementProducer).send(sent.capture());
+        assertThat(sent.getValue())
                 .usingRecursiveComparison().ignoringFields("eventId", "receivedAt")
                 .isEqualTo(new SensorMeasurementEvent(null, "warehouse-1", "t1", SensorType.TEMPERATURE, 36.5, null));
-        assertThat(saved.getValue().eventId()).isNotNull();
-        assertThat(saved.getValue().receivedAt()).isNotNull();
+        assertThat(sent.getValue().eventId()).isNotNull();
+        assertThat(sent.getValue().receivedAt()).isNotNull();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"sensor_id=t1; value=30", "sensor_id=t1; value=-4.5", "sensor_id=t1; value=30\n", "sensor_id=h1; value=50\r\n"})
-    void validSensorDataFormatsShouldBeSaved(String sensorData) {
+    @ValueSource(strings = {"sensor_id=t1; value=30", "sensor_id=t1; value=-4.5", "sensor_id=t1; value=30\n", "sensor_id=h1; value=50\r\n",
+            "sensor_id=t1; value=9999.99999", "sensor_id=t1; value=-9999.99999"})
+    void validSensorDataFormatsShouldBeSent(String sensorData) {
         when(sensorMeasurementProducer.send(any())).thenReturn(Mono.empty());
 
         StepVerifier.create(sensorMeasurementService.process(SensorType.TEMPERATURE, Flux.just(sensorData))).verifyComplete();
@@ -65,7 +66,8 @@ class SensorMeasurementServiceTests {
 
     @ParameterizedTest
     @ValueSource(strings = {"garbage", "", "sensor_id=t1;value=30", "sensor_id=t1;  value=30", " sensor_id=t1; value=30",
-            "sensor_id=h1; value=30 ", "sensor_id=; value=30", "sensor_id=h1; value=abc", "SENSOR_ID=t1; VALUE=30"})
+            "sensor_id=h1; value=30 ", "sensor_id=; value=30", "sensor_id=h1; value=abc", "SENSOR_ID=t1; VALUE=30",
+            "sensor_id=t1; value=10000", "sensor_id=t1; value=1.123456"})
     void invalidSensorDataFormatsShouldBeDiscarded(String sensorData) {
         StepVerifier.create(sensorMeasurementService.process(SensorType.TEMPERATURE, Flux.just(sensorData))).verifyComplete();
 
@@ -83,7 +85,7 @@ class SensorMeasurementServiceTests {
     }
 
     @Test
-    void failedSavesShouldNotStopTheStream() {
+    void failedSendsShouldNotStopTheStream() {
         when(sensorMeasurementProducer.send(any())).thenReturn(Mono.error(new IllegalStateException("kafka is down"))).thenReturn(Mono.empty());
 
         StepVerifier.create(sensorMeasurementService.process(SensorType.TEMPERATURE, Flux.just("sensor_id=t1; value=30", "sensor_id=t2; value=31")))

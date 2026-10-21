@@ -1,1 +1,5 @@
 description = 'Receives sensor measurements over UDP and publishes them to Kafka'
+
+dependencies {
+    implementation 'io.projectreactor.netty:reactor-netty-core' // Reactor Netty serves the UDP sockets
+}

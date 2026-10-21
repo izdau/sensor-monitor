@@ -39,19 +39,14 @@ configure(subprojects.findAll { it.name != 'common' }) {
     dependencies {
         implementation project(':common')
 
-        // reactive (Reactor Netty serves the UDP sockets)
-        implementation 'io.projectreactor.netty:reactor-netty-core'
-        implementation 'org.springframework.boot:spring-boot-starter-validation'
         implementation 'org.springframework.boot:spring-boot-starter-kafka'
         implementation 'org.springframework.boot:spring-boot-starter-jackson' // JSON of the Kafka messages
 
         // lombok
         compileOnly 'org.projectlombok:lombok'
         annotationProcessor 'org.projectlombok:lombok'
-        annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
-        testImplementation 'org.springframework.boot:spring-boot-starter-kafka-test'
         testImplementation 'io.projectreactor:reactor-test' // StepVerifier, TestPublisher
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 

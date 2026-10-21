@@ -3,7 +3,6 @@ package com.somecompany.service;
 import com.somecompany.dto.SensorMeasurementEvent;
 import com.somecompany.enums.SensorType;
 import com.somecompany.producer.SensorMeasurementProducer;
-import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,10 +20,10 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class SensorMeasurementService {
 
-    // sensor_id=t1; value=30 (netcat adds a line break at the end)
-    private static final Pattern SENSOR_DATA_REGEX_PATTERN = Pattern.compile("sensor_id=([\\w.-]{1,64}); value=(-?\\d+(?:\\.\\d+)?)\\R?");
+    // sensor_id=t1; value=30 (netcat adds a line break at the end), value: -9999.99999 to 9999.99999
+    private static final Pattern SENSOR_DATA_REGEX_PATTERN = Pattern.compile("sensor_id=([\\w.-]{1,64}); value=(-?\\d{1,4}(?:\\.\\d{1,5})?)\\R?");
 
-    private final SensorMeasurementProducer sensorMeasurementProducer; // store sensor data (sensor measurement) by sending it to Kafka
+    private final SensorMeasurementProducer sensorMeasurementProducer; // sends the sensor measurement event to Kafka
 
     @Value("${conf.warehouse-id}")
     private String warehouseId;
@@ -44,14 +43,8 @@ public class SensorMeasurementService {
     private SensorMeasurementEvent toEvent(SensorType type, String data) {
         Matcher matcher = SENSOR_DATA_REGEX_PATTERN.matcher(data);
         if (!matcher.matches())
-            throw new ValidationException("expected 'sensor_id=<id>; value=<number>' but received '%.40s'".formatted(data.strip()));
+            throw new IllegalArgumentException("expected 'sensor_id=<id>; value=<number from -9999.99999 to 9999.99999>' but received '%.40s'".formatted(data.strip()));
 
-        double value;
-        try {
-            value = Double.parseDouble(matcher.group(2));
-        } catch (NumberFormatException e) {
-            throw new ValidationException("sensor value is invalid", e);
-        }
-        return new SensorMeasurementEvent(UUID.randomUUID(), warehouseId, matcher.group(1), type, value, Instant.now());
+        return new SensorMeasurementEvent(UUID.randomUUID(), warehouseId, matcher.group(1), type, Double.parseDouble(matcher.group(2)), Instant.now());
     }
 }
