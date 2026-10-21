@@ -2,7 +2,7 @@ package com.somecompany.listener;
 
 import com.somecompany.dto.SensorMeasurementEvent;
 import com.somecompany.enums.SensorType;
-import com.somecompany.service.AlarmService;
+import com.somecompany.service.SensorAlarmService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,12 +23,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class KafkaSensorMeasurementListenerTests {
 
     @Mock
-    private AlarmService alarmService;
+    private SensorAlarmService sensorAlarmService;
     private KafkaSensorMeasurementListener listener;
 
     @BeforeEach
     void setUp() {
-        listener = new KafkaSensorMeasurementListener(JsonMapper.builder().build(), alarmService);
+        listener = new KafkaSensorMeasurementListener(JsonMapper.builder().build(), sensorAlarmService);
     }
 
     @Test
@@ -44,7 +44,7 @@ class KafkaSensorMeasurementListenerTests {
                 }
                 """)).verifyComplete();
 
-        verify(alarmService).check(new SensorMeasurementEvent(UUID.fromString("0c0f6f0e-7a54-4f5e-9d0e-3c1f5b8a2d11"),
+        verify(sensorAlarmService).check(new SensorMeasurementEvent(UUID.fromString("0c0f6f0e-7a54-4f5e-9d0e-3c1f5b8a2d11"),
                 "warehouse-1", "t1", SensorType.TEMPERATURE, 30.5, Instant.parse("2026-10-20T14:03:21.512Z")));
     }
 
@@ -53,6 +53,6 @@ class KafkaSensorMeasurementListenerTests {
     void invalidJsonMessagesShouldNotBeCheckedByAlarmService(String message) {
         StepVerifier.create(listener.onMessage(message)).verifyComplete();
 
-        verifyNoInteractions(alarmService);
+        verifyNoInteractions(sensorAlarmService);
     }
 }
