@@ -16,16 +16,16 @@ public class AlarmService {
     @Value("${conf.threshold.humidity}")
     private double humidityThreshold;
 
-    /** Raises an alarm (one log line) when the value is above the threshold of its sensor type. */
+    /** Raise an alarm (one log line) when the value is above the threshold of its sensor type. */
     public void check(SensorMeasurementEvent event) {
         double threshold = switch (event.sensorType()) {
             case TEMPERATURE -> temperatureThreshold;
             case HUMIDITY -> humidityThreshold;
         };
         if (event.value() > threshold) {
-            String type = "%-11s".formatted(event.sensorType()); // to align "TEMPERATURE" and "HUMIDITY" alarms in logs
+            String type = "%-11s".formatted(event.sensorType()); // to align "TEMPERATURE" and "HUMIDITY" in alarm logs
             log.warn(AnsiOutput.toString(AnsiColor.RED,
-                            "ALARM " + type + ": warehouse={}; sensor={}; value={}; threshold={}; eventId={}; receivedAt={}"),
+                    "ALARM " + type + ": warehouse={}; sensor={}; value={}; threshold={}; eventId={}; receivedAt={}"),
                     event.warehouseId(), event.sensorId(), event.value(), threshold, event.eventId(), event.receivedAt());
         }
     }
