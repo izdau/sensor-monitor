@@ -15,6 +15,24 @@ Java 25, Spring Boot, reactive with Flux/Mono on Reactor Netty, Gradle, Apache K
 | Compile only (fast, good after renames) | `gradlew.bat compileJava compileTestJava` | `./gradlew compileJava compileTestJava` |
 | Full check: compile, tests, jars | `gradlew.bat clean build` | `./gradlew clean build` |
 
+## Run with Docker
+
+Docker Desktop must be running. From the project root, build and start everything: Kafka, Kafka UI, **warehouse-service** and **central-service**
+(the services are built inside Docker, no local Java needed):
+
+```bash
+docker compose up --build -d
+```
+
+Send sensor data (the same way as in [Test warehouse-service locally](#test-warehouse-service-locally), step 3) and watch the alarms:
+
+```bash
+echo "sensor_id=t1; value=36" | nc -u -w1 localhost 3344
+docker compose logs -f central-service
+```
+
+Kafka UI is at http://localhost:8080. Stop everything with `docker compose down`.
+
 ## High-level architecture
 
 ```text
@@ -69,7 +87,7 @@ The (JSON) contract between **warehouse-service** and **central-service**, the m
 
 ## Test warehouse-service locally
 
-1. Start Kafka and Kafka UI by running following command from project root (Docker Desktop must be running): `docker compose up -d`
+1. Start Kafka and Kafka UI by running following command from project root (Docker Desktop must be running): `docker compose up -d kafka kafka-ui`
 2. Start **warehouse-service** by running its main class `WarehouseServiceApplication` (in IntelliJ).
    It listens on UDP port 3344 (temperature) and 3355 (humidity).
 3. Send sensor data with netcat:
@@ -90,7 +108,7 @@ The `value` is a number from -9999.99999 to 9999.99999 (up to 4 digits before an
 
 ## Test central-service (alarms) locally
 
-1. Start Kafka (`docker compose up -d`), then run `WarehouseServiceApplication` and `CentralServiceApplication` (in IntelliJ).
+1. Start Kafka (`docker compose up -d kafka kafka-ui`), then run `WarehouseServiceApplication` and `CentralServiceApplication` (in IntelliJ).
 2. Send sensor data that exceeds threshold, e.g. `echo "sensor_id=t1; value=35.1" | nc -u -w1 localhost 3344` or `echo "sensor_id=t1; value=35.1" > /dev/udp/localhost/3344`, if `nc` is not installed 
 3. **central-service** log shows a line for every value above the threshold (temperature > 35, humidity > 50, see `application.yml`):
    ```text
@@ -99,3 +117,13 @@ The `value` is a number from -9999.99999 to 9999.99999 (up to 4 digits before an
    ```
    The alarm lines are in red (`spring.output.ansi.enabled` in `application.yml`).
    Measurements sent when **central-service** is down are alarmed when it starts up again.
+
+## Flux/Mono or Virtual Threads
+
+The services use Reactor Flux/Mono on Reactor Netty, as the assignment asks. Since Java 21 there is an alternative: plain blocking code on
+Virtual Threads (Java 24 also removed the main pitfall, `synchronized` blocking the underlying thread, see [JEP 491](https://openjdk.org/jeps/491)).
+On Java 25 that gives about the same scalability (throughput) as the reactive style, as long as the libraries doing the I/O do not block
+the underlying OS thread. The JDK's own blocking I/O does not, it only suspends the virtual thread:
+
+> "the same scalability as the asynchronous style, except it is achieved transparently"
+> ([JEP 444: Virtual Threads](https://openjdk.org/jeps/444#Preserving-the-thread-per-request-style-with-virtual-threads))

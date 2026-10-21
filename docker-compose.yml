@@ -1,10 +1,19 @@
-# Local only: one Kafka broker with the image defaults. Production runs 3+ brokers (see README).
+# Local only: one Kafka broker. Production runs 3+ brokers (see README).
 services:
   kafka:
     image: apache/kafka:4.2.2
     ports:
       - "9092:9092"
       - "8080:8080" # Kafka UI, see below
+    environment: # single node; the extra DOCKER listener kafka:19092 is for the services in Docker, localhost:9092 stays for the host (IntelliJ)
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,DOCKER://:19092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,DOCKER://kafka:19092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1 # one broker
 
   kafka-ui:
     image: kafbat/kafka-ui:v1.5.0
@@ -12,5 +21,26 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: localhost:9092
+    depends_on:
+      - kafka
+
+  warehouse-service:
+    build:
+      context: .
+      dockerfile: warehouse-service/Dockerfile
+    ports:
+      - "3344:3344/udp"
+      - "3355:3355/udp"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    depends_on:
+      - kafka
+
+  central-service:
+    build:
+      context: .
+      dockerfile: central-service/Dockerfile
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
     depends_on:
       - kafka
