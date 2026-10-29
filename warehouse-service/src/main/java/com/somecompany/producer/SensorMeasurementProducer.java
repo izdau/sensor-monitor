@@ -5,8 +5,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 import tools.jackson.databind.json.JsonMapper;
 
 /** SensorMeasurementEvent Kafka producer */
@@ -20,12 +18,9 @@ public class SensorMeasurementProducer {
     @Value("${conf.kafka.topic}")
     private String topic;
 
-    /** Completes when Kafka has acknowledged the event. */
-    public Mono<Void> send(SensorMeasurementEvent event) {
+    /** Returns when Kafka has acknowledged the event. The wait blocks only the calling virtual thread. */
+    public void send(SensorMeasurementEvent event) {
         String key = event.warehouseId() + ":" + event.sensorId();
-        return Mono.fromCallable(() -> jsonMapper.writeValueAsString(event))
-                .flatMap(json -> Mono.fromFuture(() -> kafkaTemplate.send(topic, key, json)))
-                .subscribeOn(Schedulers.boundedElastic()) // send() blocks while Kafka is unreachable, not on the Netty thread
-                .then();
+        kafkaTemplate.send(topic, key, jsonMapper.writeValueAsString(event)).join();
     }
 }

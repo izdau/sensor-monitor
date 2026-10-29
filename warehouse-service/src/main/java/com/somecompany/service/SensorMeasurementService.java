@@ -7,8 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -28,16 +26,13 @@ public class SensorMeasurementService {
     @Value("${conf.warehouse-id}")
     private String warehouseId;
 
-    /** Validates each sensor data and sends it to Kafka. Bad sensor data is logged and skipped, the stream goes on. */
-    public Mono<Void> process(SensorType type, Flux<String> sensorData) {
-        return sensorData
-                .flatMap(data -> Mono.fromCallable(() -> toEvent(type, data))
-                        .flatMap(sensorMeasurementProducer::send)
-                        .onErrorResume(e -> {
-                            log.warn("dropped {} sensor data: {}", type, e.getMessage());
-                            return Mono.empty();
-                        }))
-                .then();
+    /** Validates the sensor data and sends it to Kafka. Bad sensor data is logged and skipped. */
+    public void process(SensorType type, String sensorData) {
+        try {
+            sensorMeasurementProducer.send(toEvent(type, sensorData));
+        } catch (RuntimeException e) {
+            log.warn("dropped {} sensor data: {}", type, e.getMessage());
+        }
     }
 
     private SensorMeasurementEvent toEvent(SensorType type, String data) {
