@@ -6,7 +6,7 @@ A small event-driven system that watches the temperature and humidity sensors of
 - **central-service** consumes the measurements from Kafka and raises alarms in its log
   when a configured threshold is exceeded.
 
-Java 25, Spring Boot, reactive with Flux/Mono on Reactor Netty, Gradle, Apache Kafka.
+Java 25, Spring Boot, plain blocking code on Virtual Threads, Gradle, Apache Kafka.
 
 ## Compile and test
 
@@ -120,10 +120,13 @@ The `value` is a number from -9999.99999 to 9999.99999 (up to 4 digits before an
 
 ## Flux/Mono or Virtual Threads
 
-The services use Reactor Flux/Mono on Reactor Netty, as the assignment asks. Since Java 21 there is an alternative: plain blocking code on
-Virtual Threads (Java 24 also removed the main pitfall, `synchronized` blocking the underlying thread, see [JEP 491](https://openjdk.org/jeps/491)).
+Branch `main` uses Reactor Flux/Mono on Reactor Netty, as the assignment asks. This branch (`virtual-threads`) is the alternative available since
+Java 21, the same services as plain blocking code on Virtual Threads (Java 24 also removed the main pitfall, `synchronized` blocking the underlying thread, see [JEP 491](https://openjdk.org/jeps/491)).
 On Java 25 that gives about the same scalability (throughput) as the reactive style, as long as the libraries doing the I/O do not block
 the underlying OS thread. The JDK's own blocking I/O does not, it only suspends the virtual thread:
 
 > "the same scalability as the asynchronous style, except it is achieved transparently"
 > ([JEP 444: Virtual Threads](https://openjdk.org/jeps/444#Preserving-the-thread-per-request-style-with-virtual-threads))
+
+Here **warehouse-service** handles each sensor data on its own virtual thread, which waits for the Kafka acknowledgement (`UdpSensorDataListener`),
+and **central-service** runs its Kafka listener on a virtual thread (`spring.threads.virtual.enabled`).

@@ -13,16 +13,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SensorMeasurementServiceTests {
@@ -39,10 +35,7 @@ class SensorMeasurementServiceTests {
 
     @Test
     void validSensorDataShouldBeSentAsAnEvent() {
-        when(sensorMeasurementProducer.send(any())).thenReturn(Mono.empty());
-
-        StepVerifier.create(sensorMeasurementService.process(SensorType.TEMPERATURE, Flux.just("sensor_id=t1; value=36.5")))
-                .verifyComplete();
+        sensorMeasurementService.process(SensorType.TEMPERATURE, "sensor_id=t1; value=36.5");
 
         ArgumentCaptor<SensorMeasurementEvent> sent = ArgumentCaptor.forClass(SensorMeasurementEvent.class);
         verify(sensorMeasurementProducer).send(sent.capture());
@@ -57,9 +50,7 @@ class SensorMeasurementServiceTests {
     @ValueSource(strings = {"sensor_id=t1; value=30", "sensor_id=t1; value=-4.5", "sensor_id=t1; value=30\n", "sensor_id=h1; value=50\r\n",
             "sensor_id=t1; value=9999.99999", "sensor_id=t1; value=-9999.99999"})
     void validSensorDataFormatsShouldBeSent(String sensorData) {
-        when(sensorMeasurementProducer.send(any())).thenReturn(Mono.empty());
-
-        StepVerifier.create(sensorMeasurementService.process(SensorType.TEMPERATURE, Flux.just(sensorData))).verifyComplete();
+        sensorMeasurementService.process(SensorType.TEMPERATURE, sensorData);
 
         verify(sensorMeasurementProducer).send(any());
     }
@@ -69,28 +60,17 @@ class SensorMeasurementServiceTests {
             "sensor_id=h1; value=30 ", "sensor_id=; value=30", "sensor_id=h1; value=abc", "SENSOR_ID=t1; VALUE=30",
             "sensor_id=t1; value=10000", "sensor_id=t1; value=1.123456"})
     void invalidSensorDataFormatsShouldBeDiscarded(String sensorData) {
-        StepVerifier.create(sensorMeasurementService.process(SensorType.TEMPERATURE, Flux.just(sensorData))).verifyComplete();
+        sensorMeasurementService.process(SensorType.TEMPERATURE, sensorData);
 
         verifyNoInteractions(sensorMeasurementProducer);
     }
 
     @Test
-    void invalidSensorDataFormatsShouldNotStopTheStream() {
-        when(sensorMeasurementProducer.send(any())).thenReturn(Mono.empty());
+    void failedSendsShouldBeDiscarded() {
+        doThrow(new IllegalStateException("kafka is down")).when(sensorMeasurementProducer).send(any());
 
-        StepVerifier.create(sensorMeasurementService.process(SensorType.TEMPERATURE, Flux.just("garbage", "sensor_id=t1; value=30")))
-                .verifyComplete();
+        sensorMeasurementService.process(SensorType.TEMPERATURE, "sensor_id=t1; value=30"); // logs a warning, does not throw
 
         verify(sensorMeasurementProducer).send(any());
-    }
-
-    @Test
-    void failedSendsShouldNotStopTheStream() {
-        when(sensorMeasurementProducer.send(any())).thenReturn(Mono.error(new IllegalStateException("kafka is down"))).thenReturn(Mono.empty());
-
-        StepVerifier.create(sensorMeasurementService.process(SensorType.TEMPERATURE, Flux.just("sensor_id=t1; value=30", "sensor_id=t2; value=31")))
-                .verifyComplete();
-
-        verify(sensorMeasurementProducer, times(2)).send(any());
     }
 }

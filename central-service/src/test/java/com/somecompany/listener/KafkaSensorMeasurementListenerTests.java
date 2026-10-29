@@ -10,7 +10,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import reactor.test.StepVerifier;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
@@ -33,7 +32,7 @@ class KafkaSensorMeasurementListenerTests {
 
     @Test
     void validJsonMessageShouldBeCheckedByAlarmService() {
-        StepVerifier.create(listener.onMessage("""
+        listener.onMessage("""
                 {
                   "eventId": "0c0f6f0e-7a54-4f5e-9d0e-3c1f5b8a2d11",
                   "warehouseId": "warehouse-1",
@@ -42,7 +41,7 @@ class KafkaSensorMeasurementListenerTests {
                   "value": 30.5,
                   "receivedAt": "2026-10-20T14:03:21.512Z"
                 }
-                """)).verifyComplete();
+                """);
 
         verify(sensorAlarmService).check(new SensorMeasurementEvent(UUID.fromString("0c0f6f0e-7a54-4f5e-9d0e-3c1f5b8a2d11"),
                 "warehouse-1", "t1", SensorType.TEMPERATURE, 30.5, Instant.parse("2026-10-20T14:03:21.512Z")));
@@ -51,7 +50,7 @@ class KafkaSensorMeasurementListenerTests {
     @ParameterizedTest
     @ValueSource(strings = {"garbage", "", "{\"sensorType\": \"PRESSURE\"}"})
     void invalidJsonMessagesShouldNotBeCheckedByAlarmService(String message) {
-        StepVerifier.create(listener.onMessage(message)).verifyComplete();
+        listener.onMessage(message);
 
         verifyNoInteractions(sensorAlarmService);
     }

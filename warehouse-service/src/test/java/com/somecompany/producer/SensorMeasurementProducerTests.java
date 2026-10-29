@@ -10,7 +10,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
-import reactor.test.StepVerifier;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
@@ -18,6 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -49,7 +49,7 @@ class SensorMeasurementProducerTests {
     void eventShouldBeSentToKafkaWithSpecifiedKeyFormat() {
         when(kafkaTemplate.send(anyString(), anyString(), anyString())).thenReturn(CompletableFuture.completedFuture(null));
 
-        StepVerifier.create(sensorMeasurementProducer.send(event)).verifyComplete();
+        sensorMeasurementProducer.send(event);
 
         ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
         verify(kafkaTemplate).send(eq("sensor-measurements"), eq("warehouse-1:t1"), json.capture());
@@ -70,6 +70,6 @@ class SensorMeasurementProducerTests {
         when(kafkaTemplate.send(anyString(), anyString(), anyString()))
                 .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("kafka is down")));
 
-        StepVerifier.create(sensorMeasurementProducer.send(event)).expectError(IllegalStateException.class).verify();
+        assertThatThrownBy(() -> sensorMeasurementProducer.send(event)).hasCauseInstanceOf(IllegalStateException.class);
     }
 }
