@@ -1,6 +1,7 @@
 spring:
   application.name: central-service
   main.keep-alive: true # keep the JVM alive until Kafka consumers are stopped on shutdown
+  threads.virtual.enabled: true # the Kafka listener runs on a virtual thread
   lifecycle.timeout-per-shutdown-phase: 20s
   output.ansi.enabled: always # colored ALARM lines (Windows consoles are not detected automatically)
   kafka:

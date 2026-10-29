@@ -47,7 +47,6 @@ configure(subprojects.findAll { it.name != 'common' }) {
         annotationProcessor 'org.projectlombok:lombok'
 
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
-        testImplementation 'io.projectreactor:reactor-test' // StepVerifier, TestPublisher
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
         mockitoAgent('org.mockito:mockito-core') { transitive = false }
