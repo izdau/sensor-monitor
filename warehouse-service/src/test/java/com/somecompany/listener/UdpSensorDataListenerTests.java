@@ -20,7 +20,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(properties = {"conf.sensor.temperature-port=33344", "conf.sensor.humidity-port=33355"}) // not the real ports, in case the app is running
+@SpringBootTest(properties = {"conf.sensor.temperature-port=33344", "conf.sensor.humidity-port=33355", "conf.sensor.location-port=33366"}) // not the real ports, in case the app is running
 class UdpSensorDataListenerTests {
 
     @MockitoBean
@@ -35,9 +35,9 @@ class UdpSensorDataListenerTests {
         send(33355, "sensor_id=h1; value=40");
 
         verify(sensorMeasurementProducer, timeout(3000)).send(argThat(event ->
-                event.sensorType() == SensorType.TEMPERATURE && event.sensorId().equals("t1") && event.value() == 36.5));
+                event.sensorType() == SensorType.TEMPERATURE && event.sensorId().equals("t1") && event.value().equals("value=36.5")));
         verify(sensorMeasurementProducer, timeout(3000)).send(argThat(event ->
-                event.sensorType() == SensorType.HUMIDITY && event.sensorId().equals("h1") && event.value() == 40));
+                event.sensorType() == SensorType.HUMIDITY && event.sensorId().equals("h1") && event.value().equals("value=40")));
         verify(sensorMeasurementProducer, times(2)).send(any());
     }
 

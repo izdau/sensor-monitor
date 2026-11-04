@@ -39,13 +39,13 @@ class KafkaSensorMeasurementListenerTests {
                   "warehouseId": "warehouse-1",
                   "sensorId": "t1",
                   "sensorType": "TEMPERATURE",
-                  "value": 30.5,
+                  "value": "value=30.5",
                   "receivedAt": "2026-10-20T14:03:21.512Z"
                 }
                 """)).verifyComplete();
 
         verify(sensorAlarmService).check(new SensorMeasurementEvent(UUID.fromString("0c0f6f0e-7a54-4f5e-9d0e-3c1f5b8a2d11"),
-                "warehouse-1", "t1", SensorType.TEMPERATURE, 30.5, Instant.parse("2026-10-20T14:03:21.512Z")));
+                "warehouse-1", "t1", SensorType.TEMPERATURE, "value=30.5", Instant.parse("2026-10-20T14:03:21.512Z")));
     }
 
     @ParameterizedTest

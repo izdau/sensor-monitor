@@ -32,7 +32,7 @@ class SensorMeasurementProducerTests {
             "warehouse-1",
             "t1",
             SensorType.TEMPERATURE,
-            30.5,
+            "value=30.5",
             Instant.parse("2026-10-20T14:03:21.512Z"));
 
     @Mock
@@ -59,7 +59,7 @@ class SensorMeasurementProducerTests {
                   "warehouseId": "warehouse-1",
                   "sensorId": "t1",
                   "sensorType": "TEMPERATURE",
-                  "value": 30.5,
+                  "value": "value=30.5",
                   "receivedAt": "2026-10-20T14:03:21.512Z"
                 }
                 """));

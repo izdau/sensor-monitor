@@ -1,5 +1,7 @@
 package com.somecompany.service;
 
+import com.somecompany.config.GeofenceProperties;
+import com.somecompany.dto.Point;
 import com.somecompany.dto.SensorMeasurementEvent;
 import com.somecompany.enums.SensorType;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +16,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,7 +25,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SensorAlarmServiceTests {
 
     private static final UUID EVENT_ID = UUID.fromString("0c0f6f0e-7a54-4f5e-9d0e-3c1f5b8a2d11");
-    private final SensorAlarmService sensorAlarmService = new SensorAlarmService();
+    //      - lat: 43.2389
+    //        lon: 76.8897
+    //      - lat: 43.2420
+    //        lon: 76.9050
+    //      - lat: 43.2300
+    //        lon: 76.9100
+    //      - lat: 43.2270
+    //        lon: 76.8950
+    private final List<Point> geoFencePoints = List.of(
+            new Point(43.2389, 76.8897), new Point(43.2420, 76.9050),
+            new Point(43.2300, 76.9100), new Point(43.2270, 76.8950));
+    private final SensorAlarmService sensorAlarmService = new SensorAlarmService(new GeofenceProperties());
 
     @BeforeEach
     void setUp() {
@@ -71,6 +85,6 @@ class SensorAlarmServiceTests {
     }
 
     private static SensorMeasurementEvent event(SensorType type, double value) {
-        return new SensorMeasurementEvent(EVENT_ID, "warehouse-1", "t1", type, value, Instant.parse("2026-10-20T23:59:59.999Z"));
+        return new SensorMeasurementEvent(EVENT_ID, "warehouse-1", "t1", type, String.valueOf(value), Instant.parse("2026-10-20T23:59:59.999Z"));
     }
 }
