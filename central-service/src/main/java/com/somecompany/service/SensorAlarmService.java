@@ -3,6 +3,7 @@ package com.somecompany.service;
 import com.somecompany.config.GeofenceProperties;
 import com.somecompany.dto.Point;
 import com.somecompany.dto.SensorMeasurementEvent;
+import com.somecompany.enums.SensorType;
 import com.somecompany.util.GeofenceUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.stereotype.Service;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -21,7 +25,14 @@ public class SensorAlarmService {
     @Value("${conf.threshold.humidity}")
     private double humidityThreshold;
     private final GeofenceProperties geofenceProperties;
-    // value=1.0 or lat=123, lon=123
+
+    // value=35.1
+    private static final Pattern HUMIDITY_AND_TEMPERATURE_VALUE_REGEX = Pattern.compile("value=(-?\\d{1,4}(?:\\.\\d+)?)");
+    // lat=123, lonh=123
+    private static final Pattern LOCATION_VALUE_REGEX = Pattern.compile("lat=(-?\\d{1,3}(?:\\.\\d+)?), long=(-?\\d{1,3}(?:\\.\\d+)?)");
+
+
+
 
     /** Raise an alarm (one log line) when the value is above the threshold of its sensor type. */
     public void check(SensorMeasurementEvent event) {
@@ -40,57 +51,23 @@ public class SensorAlarmService {
     }
 
     private boolean validateSensorValueAndCheckThreshold(SensorMeasurementEvent event) {
-        String sensorValue = event.value();
+        String sensorStrValue = event.value();
+        Matcher matcher;
         switch (event.sensorType()) {
-            case HUMIDITY:
-                if (!sensorValue.startsWith("value=")) {
-                    throw new IllegalArgumentException("sensor value is invalid: " + sensorValue);
-                }
-                sensorValue = sensorValue.replace("value=", "");
+            case HUMIDITY, TEMPERATURE:
+                matcher = HUMIDITY_AND_TEMPERATURE_VALUE_REGEX.matcher(sensorStrValue);
+                if (!matcher.matches())
+                    throw new IllegalArgumentException("sensor value is invalid: " + sensorStrValue + "; event: " + event);
 
-                try {
-                    double humidity = Double.parseDouble(sensorValue);
-                    return humidity > humidityThreshold;
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("the humidity value is not valid: " + sensorValue);
-                }
-            case TEMPERATURE:
-                if (!sensorValue.startsWith("value=")) {
-                    throw new IllegalArgumentException("sensor value is invalid: " + sensorValue);
-                }
-                sensorValue = sensorValue.replace("value=", "");
-
-                try {
-                    double temperature = Double.parseDouble(sensorValue);
-                    return temperature > temperatureThreshold;
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("the humidity value is not valid: " + sensorValue);
-                }
+                double sensorValue = Double.parseDouble(matcher.group(1));
+                return event.sensorType() == SensorType.HUMIDITY ? sensorValue > humidityThreshold : sensorValue > temperatureThreshold;
             case LOCATION: //lat=123, lon=123
-                if (!sensorValue.contains(", "))
-                    throw new IllegalArgumentException("Invalid sensor value for location: " + sensorValue);
+                matcher = LOCATION_VALUE_REGEX.matcher(sensorStrValue);
+                if (!matcher.matches())
+                    throw new IllegalArgumentException("sensor value is invalid: " + sensorStrValue + "; event: " + event);
 
-                String[] valueParts = sensorValue.split(",");
-                if (!valueParts[0].trim().startsWith("lat="))
-                    throw new IllegalArgumentException("Invalid sensor value for location: " + sensorValue);
-                double latitude;
-                try {
-                    latitude = Double.parseDouble(valueParts[0].trim().replace("lat=", ""));
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("Invalid sensor value for location: " + sensorValue);
-                }
-                if (!valueParts[1].trim().startsWith("long="))
-                    throw new IllegalArgumentException("Invalid sensor value for location: " + sensorValue);
-
-                double longitude;
-                try {
-                    longitude = Double.parseDouble(valueParts[1].trim().replace("long=", ""));
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("Invalid sensor value for location: " + sensorValue);
-                }
-
-                Point currentLoc = new Point(latitude, longitude);
-                return GeofenceUtil.isInsideGeofence(currentLoc, geofenceProperties.getPoints());
+                Point currentLoc = new Point(Double.parseDouble(matcher.group(1)), Double.parseDouble(matcher.group(2)));
+                return !GeofenceUtil.isInsideGeofence(currentLoc, geofenceProperties.getPoints());
         }
 
         return false;
