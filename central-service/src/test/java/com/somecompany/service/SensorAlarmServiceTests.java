@@ -72,7 +72,7 @@ class SensorAlarmServiceTests {
 
         assertThat(output)
                 .contains("ALARM TEMPERATURE")
-                .contains("warehouse=warehouse-1; sensor=t1; value=35.1; threshold=35.0; eventId=" + EVENT_ID + "; receivedAt=2026-10-20T23:59:59.999Z");
+                .contains("warehouse=warehouse-1; sensor=t1; value=value=35.1; threshold=35.0; eventId=" + EVENT_ID + "; receivedAt=2026-10-20T23:59:59.999Z");
     }
 
     @Test
@@ -81,10 +81,10 @@ class SensorAlarmServiceTests {
 
         assertThat(output)
                 .contains("ALARM HUMIDITY")
-                .contains("warehouse=warehouse-1; sensor=t1; value=50.1; threshold=50.0; eventId=" + EVENT_ID + "; receivedAt=2026-10-20T23:59:59.999Z");
+                .contains("warehouse=warehouse-1; sensor=t1; value=value=50.1; threshold=50.0; eventId=" + EVENT_ID + "; receivedAt=2026-10-20T23:59:59.999Z");
     }
 
     private static SensorMeasurementEvent event(SensorType type, double value) {
-        return new SensorMeasurementEvent(EVENT_ID, "warehouse-1", "t1", type, String.valueOf(value), Instant.parse("2026-10-20T23:59:59.999Z"));
+        return new SensorMeasurementEvent(EVENT_ID, "warehouse-1", "t1", type, "value=" + value, Instant.parse("2026-10-20T23:59:59.999Z"));
     }
 }
