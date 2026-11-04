@@ -31,6 +31,7 @@ services:
     ports:
       - "3344:3344/udp"
       - "3355:3355/udp"
+      - "3366:3366/udp"
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
     depends_on:
