@@ -28,11 +28,8 @@ public class SensorAlarmService {
 
     // value=35.1
     private static final Pattern HUMIDITY_AND_TEMPERATURE_VALUE_REGEX = Pattern.compile("value=(-?\\d{1,4}(?:\\.\\d+)?)");
-    // lat=123, lonh=123
+    // lat=43.2150, long=76.8800
     private static final Pattern LOCATION_VALUE_REGEX = Pattern.compile("lat=(-?\\d{1,3}(?:\\.\\d+)?), long=(-?\\d{1,3}(?:\\.\\d+)?)");
-
-
-
 
     /** Raise an alarm (one log line) when the value is above the threshold of its sensor type. */
     public void check(SensorMeasurementEvent event) {
@@ -54,14 +51,14 @@ public class SensorAlarmService {
         String sensorStrValue = event.value();
         Matcher matcher;
         switch (event.sensorType()) {
-            case HUMIDITY, TEMPERATURE:
+            case HUMIDITY, TEMPERATURE: // value=35.1
                 matcher = HUMIDITY_AND_TEMPERATURE_VALUE_REGEX.matcher(sensorStrValue);
                 if (!matcher.matches())
                     throw new IllegalArgumentException("sensor value is invalid: " + sensorStrValue + "; event: " + event);
 
                 double sensorValue = Double.parseDouble(matcher.group(1));
                 return event.sensorType() == SensorType.HUMIDITY ? sensorValue > humidityThreshold : sensorValue > temperatureThreshold;
-            case LOCATION: //lat=123, lon=123
+            case LOCATION: // lat=43.2150, long=76.8800
                 matcher = LOCATION_VALUE_REGEX.matcher(sensorStrValue);
                 if (!matcher.matches())
                     throw new IllegalArgumentException("sensor value is invalid: " + sensorStrValue + "; event: " + event);
