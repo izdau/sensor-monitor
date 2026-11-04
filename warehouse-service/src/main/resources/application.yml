@@ -8,5 +8,6 @@ conf:
   warehouse-id: warehouse-1
   sensor.temperature-port: 3344
   sensor.humidity-port: 3355
+  sensor.location-port: 3366
   kafka.topic: sensor-measurements
 

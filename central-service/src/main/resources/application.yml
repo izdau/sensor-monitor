@@ -13,3 +13,13 @@ conf:
   kafka.topic: sensor-measurements
   threshold.temperature: 35
   threshold.humidity: 50
+  geofence:
+    points:
+      - lat: 43.2389
+        lon: 76.8897
+      - lat: 43.2420
+        lon: 76.9050
+      - lat: 43.2300
+        lon: 76.9100
+      - lat: 43.2270
+        lon: 76.8950

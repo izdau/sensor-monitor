@@ -12,6 +12,6 @@ public record SensorMeasurementEvent(
         String warehouseId,
         String sensorId,
         SensorType sensorType,
-        double value,
+        String value,
         Instant receivedAt) {
 }

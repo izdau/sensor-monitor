@@ -24,6 +24,8 @@ public class UdpSensorDataListener implements SmartLifecycle {
     private int temperaturePort;
     @Value("${conf.sensor.humidity-port}")
     private int humidityPort;
+    @Value("${conf.sensor.location-port}")
+    private int locationPort;
 
     private final SensorMeasurementService sensorMeasurementService;
     private final List<Connection> servers = new ArrayList<>();
@@ -32,6 +34,7 @@ public class UdpSensorDataListener implements SmartLifecycle {
     public void start() {
         listen(SensorType.TEMPERATURE, temperaturePort);
         listen(SensorType.HUMIDITY, humidityPort);
+        listen(SensorType.LOCATION, locationPort);
     }
 
     private void listen(SensorType type, int port) {

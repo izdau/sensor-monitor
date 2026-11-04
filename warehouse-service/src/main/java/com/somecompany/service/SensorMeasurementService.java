@@ -20,9 +20,9 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class SensorMeasurementService {
 
-    // sensor_id=t1; value=30 (netcat adds a line break at the end), value: -9999.99999 to 9999.99999
-    private static final Pattern SENSOR_DATA_REGEX_PATTERN = Pattern.compile("sensor_id=([\\w.-]{1,64}); value=(-?\\d{1,4}(?:\\.\\d{1,5})?)\\R?");
-
+    // sensor_id=t1; value=30
+    // sensor_id=l;1 lat=53.24, long=23.56
+    private static final Pattern SENSOR_DATA_REGEX_PATTERN = Pattern.compile("sensor_id=([\\w.-]{1,64}); (.+?)\\r?\\n?$");
     private final SensorMeasurementProducer sensorMeasurementProducer; // sends the sensor measurement event to Kafka
 
     @Value("${conf.warehouse-id}")
@@ -43,8 +43,8 @@ public class SensorMeasurementService {
     private SensorMeasurementEvent toEvent(SensorType type, String data) {
         Matcher matcher = SENSOR_DATA_REGEX_PATTERN.matcher(data);
         if (!matcher.matches())
-            throw new IllegalArgumentException("expected 'sensor_id=<id>; value=<number from -9999.99999 to 9999.99999>' but received '%.40s'".formatted(data.strip()));
+            throw new IllegalArgumentException("expected 'sensor_id=<id>; any_str' but received '%.40s'".formatted(data.strip()));
 
-        return new SensorMeasurementEvent(UUID.randomUUID(), warehouseId, matcher.group(1), type, Double.parseDouble(matcher.group(2)), Instant.now());
+        return new SensorMeasurementEvent(UUID.randomUUID(), warehouseId, matcher.group(1), type, matcher.group(2), Instant.now());
     }
 }
