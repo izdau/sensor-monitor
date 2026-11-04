@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 public class SensorMeasurementService {
 
     // sensor_id=t1; value=30
-    // sensor_id=l;1 lat=53.24, long=23.56
+    // sensor_id=l1; lat=53.24, long=23.56
     private static final Pattern SENSOR_DATA_REGEX_PATTERN = Pattern.compile("sensor_id=([\\w.-]{1,64}); (.+?)\\r?\\n?$");
     private final SensorMeasurementProducer sensorMeasurementProducer; // sends the sensor measurement event to Kafka
 
